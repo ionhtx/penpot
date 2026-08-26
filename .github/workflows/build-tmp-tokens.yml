@@ -2,8 +2,6 @@ name: _TMP TOKENS
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '46 5-20 * * 1-5'
 
 jobs:
   build-bundle:
