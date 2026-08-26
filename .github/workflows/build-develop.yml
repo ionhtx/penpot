@@ -2,8 +2,6 @@ name: _DEVELOP
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '16 5-20 * * 1-5'
 
 jobs:
   build-bundle:
