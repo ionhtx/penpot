@@ -2,7 +2,7 @@
 ;; License, v. 2.0. If a copy of the MPL was not distributed with this
 ;; file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ;;
-;; Copyright (c) KALEIDOS INC
+;; Copyright (c) KALEIDOS SUBSIDIARY SL
 
 (ns app.main.ui.workspace.shapes.text.v3-editor
   "Contenteditable DOM element for WASM text editor input"
@@ -19,6 +19,7 @@
    [app.main.ui.css-cursors :as cur]
    [app.render-wasm.api :as wasm.api]
    [app.render-wasm.text-editor :as text-editor]
+   [app.util.clipboard :as clipboard]
    [app.util.dom :as dom]
    [app.util.keyboard :as kbd]
    [cuerdas.core :as str]
@@ -267,8 +268,13 @@
            (when (text-editor/text-editor-has-focus?)
              (dom/prevent-default event)
              (when (text-editor/text-editor-has-selection?)
-               (let [text (text-editor/text-editor-export-selection)]
-                 (.setData (.-clipboardData event) "text/plain" text))))))
+               (let [text (or (text-editor/text-editor-export-selection) "")
+                     html (clipboard/plain-text->html text)
+                     data (.-clipboardData event)]
+                 ;; text/html matters on Windows: many apps prefer CF_HTML, and
+                 ;; without it they can pick up the empty contenteditable `<br>`.
+                 (.setData data "text/plain" text)
+                 (.setData data "text/html" html))))))
 
         on-cut
         (mf/use-fn
@@ -276,9 +282,12 @@
            (when (text-editor/text-editor-has-focus?)
              (dom/prevent-default event)
              (when (text-editor/text-editor-has-selection?)
-               (let [text (text-editor/text-editor-export-selection)]
-                 (.setData (.-clipboardData event) "text/plain" (or text ""))
-                 (when (and text (seq text))
+               (let [text (or (text-editor/text-editor-export-selection) "")
+                     html (clipboard/plain-text->html text)
+                     data (.-clipboardData event)]
+                 (.setData data "text/plain" text)
+                 (.setData data "text/html" html)
+                 (when (seq text)
                    (text-editor/text-editor-delete-backward)
                    (sync-wasm-text-editor-content!)
                    (wasm.api/request-render-preserving-target "text-cut"))))
